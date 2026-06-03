@@ -72,7 +72,8 @@ export default defineConfig(({ command, mode }) => {
     base: VITE_APP_PUBLIC_BASE,
     plugins: [
       // UniXXX 需要在 Uni 之前引入
-      UniLayouts(),
+      // 抖音端不启用 Layouts 和 KuRoot（会导致白屏）
+      UNI_PLATFORM !== 'mp-toutiao' && UniLayouts(),
       UniPlatform(),
       UniManifest(),
       UniComponents({
@@ -98,7 +99,8 @@ export default defineConfig(({ command, mode }) => {
         logger: false,
       }),
       // 若存在改变 pages.json 的插件，请将 UniKuRoot 放置其后
-      UniKuRoot({
+      // 抖音端不启用（会导致白屏）
+      UNI_PLATFORM !== 'mp-toutiao' && UniKuRoot({
         excludePages: ['**/components/**/**.*', '**/sections/**/**.*'],
       }),
       Uni(),
