@@ -7,8 +7,11 @@ export const TABBAR_STRATEGY_MAP = {
   CUSTOM_TABBAR: 2,
 }
 
-// 使用自定义 tabbar（支持 UnoCSS 图标，无需切图）
-export const selectedTabbarStrategy = TABBAR_STRATEGY_MAP.CUSTOM_TABBAR
+// 微信用自定义 tabbar；抖音用原生 tabbar（兼容性更好）
+export let selectedTabbarStrategy = TABBAR_STRATEGY_MAP.CUSTOM_TABBAR
+// #ifdef MP-TOUTIAO
+selectedTabbarStrategy = TABBAR_STRATEGY_MAP.NATIVE_TABBAR
+// #endif
 
 // 原生 tabbar 配置（备用）
 export const nativeTabbarList: NativeTabBarItem[] = [
