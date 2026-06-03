@@ -2,9 +2,18 @@
 import CtaBottom from '@/components/cta-bottom.vue'
 import CtaInline from '@/components/cta-inline.vue'
 import CtaPopup from '@/components/cta-popup.vue'
+import { createShareConfig } from '@/utils/share'
 
 defineOptions({ name: 'ContentDetail' })
 definePage({ style: { navigationBarTitleText: '' } })
+
+// 双端分享：微信 onShareAppMessage 和 抖音 onShareAppMessage 共用配置
+onShareAppMessage(() => {
+  return createShareConfig({
+    title: article.value.title,
+    path: `/pages/content/detail?id=${article.value.id}`,
+  })
+})
 
 const article = ref({
   id: 1,
