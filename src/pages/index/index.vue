@@ -23,7 +23,8 @@ const loading = ref(true)
 
 async function fetchHot() {
   try {
-    hotList.value = await getHotArticles(6)
+    const result = await getHotArticles(6)
+    hotList.value = result || []
   } catch (e) {
     console.error('获取热门文章失败:', e)
   } finally {

@@ -1,27 +1,30 @@
-// 用户收藏 API
-import type { Article } from './types/article'
+// 用户收藏 API - clientDB 直连
+const db = uniCloud.database()
 
-const collectionObj = uniCloud.importObject('collection')
-
-export interface CollectionItem {
-  _id: string
-  user_id: string
-  article_id: string
-  create_date: number
-  article: Article | null
+export async function getCollectionList() {
+  const res = await db.collection('user_collections').orderBy('create_date', 'desc').get()
+  return res.result?.data || res.data || []
 }
 
-/** 获取收藏列表 */
-export function getCollectionList(page = 1) {
-  return collectionObj.list({ page }) as Promise<CollectionItem[]>
+export async function toggleCollection(articleId: string) {
+  const exist = await db.collection('user_collections').where({ article_id: articleId }).count()
+  const total = exist.result?.total || exist.total || 0
+  if (total > 0) {
+    const list = await db.collection('user_collections').where({ article_id: articleId }).get()
+    const data = list.result?.data || list.data || []
+    if (data.length > 0) {
+      await db.collection('user_collections').doc(data[0]._id).remove()
+      await db.collection('articles').doc(articleId).update({ collects: db.command.inc(-1) })
+    }
+    return { collected: false }
+  } else {
+    await db.collection('user_collections').add({ article_id: articleId, create_date: Date.now() })
+    await db.collection('articles').doc(articleId).update({ collects: db.command.inc(1) })
+    return { collected: true }
+  }
 }
 
-/** 切换收藏状态 */
-export function toggleCollection(articleId: string) {
-  return collectionObj.toggle({ article_id: articleId }) as Promise<{ collected: boolean }>
-}
-
-/** 检查是否已收藏 */
-export function checkCollected(articleId: string) {
-  return collectionObj.check({ article_id: articleId }) as Promise<{ collected: boolean }>
+export async function checkCollected(articleId: string) {
+  const res = await db.collection('user_collections').where({ article_id: articleId }).count()
+  return { collected: (res.result?.total || res.total || 0) > 0 }
 }

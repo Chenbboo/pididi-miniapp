@@ -164,5 +164,7 @@ export default defineManifestConfig({
   'uniCloud': {
     provider: 'aliyun',
     spaceId: 'mp-1d2de47f-aa8c-41d0-8cbc-f88bb18923ad',
+    clientSecret: 'MmBX5nRa3yBziaje1cKdlw==',
+    endpoint: 'https://api.next.bspapp.com',
   },
 })

@@ -1,14 +1,13 @@
-// 目的地 API
-import type { Destination } from './types/destination'
+// 目的地 API - clientDB 直连
+const db = uniCloud.database()
 
-const destinationObj = uniCloud.importObject('destination')
-
-/** 获取所有目的地 */
-export function getDestinationList() {
-  return destinationObj.list() as Promise<Destination[]>
+export async function getDestinationList() {
+  const res = await db.collection('destinations').where({ status: 'active' }).orderBy('sort', 'asc').get()
+  return res.result?.data || res.data || []
 }
 
-/** 获取目的地详情 */
-export function getDestinationDetail(id: string) {
-  return destinationObj.detail({ id }) as Promise<Destination>
+export async function getDestinationDetail(id: string) {
+  const res = await db.collection('destinations').doc(id).get()
+  const data = res.result?.data || res.data
+  return Array.isArray(data) ? data[0] : data
 }

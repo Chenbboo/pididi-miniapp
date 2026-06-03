@@ -1,24 +1,13 @@
-// CTA 配置 API
+// CTA 配置 API - clientDB 直连
+const db = uniCloud.database()
 
-const ctaObj = uniCloud.importObject('cta')
-
-export interface CtaConfig {
-  _id: string
-  type: 'A' | 'B' | 'C' | 'D'
-  title?: string
-  subtitle?: string
-  qrcode_url?: string
-  link_url?: string
-  trigger_seconds?: number
-  enabled: boolean
+export async function getCtaConfig() {
+  const res = await db.collection('cta_config').where({ enabled: true }).orderBy('type', 'asc').get()
+  return res.result?.data || res.data || []
 }
 
-/** 获取所有启用的 CTA 配置 */
-export function getCtaConfig() {
-  return ctaObj.get() as Promise<CtaConfig[]>
-}
-
-/** 获取指定类型的 CTA 配置 */
-export function getCtaByType(type: string) {
-  return ctaObj.getByType({ type }) as Promise<CtaConfig | null>
+export async function getCtaByType(type: string) {
+  const res = await db.collection('cta_config').where({ type, enabled: true }).get()
+  const data = res.result?.data || res.data || []
+  return data[0] || null
 }

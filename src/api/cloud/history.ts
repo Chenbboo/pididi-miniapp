@@ -1,22 +1,22 @@
-// 浏览历史 API
-import type { Article } from './types/article'
+// 浏览历史 API - clientDB 直连
+const db = uniCloud.database()
 
-const historyObj = uniCloud.importObject('history')
-
-export interface HistoryItem {
-  _id: string
-  user_id: string
-  article_id: string
-  browse_time: number
-  article: Article | null
+export async function getHistoryList() {
+  const res = await db.collection('browse_history').orderBy('browse_time', 'desc').get()
+  return res.result?.data || res.data || []
 }
 
-/** 获取浏览历史 */
-export function getHistoryList(page = 1) {
-  return historyObj.list({ page }) as Promise<HistoryItem[]>
-}
-
-/** 记录浏览 */
-export function recordBrowse(articleId: string) {
-  return historyObj.record({ article_id: articleId }) as Promise<{ ok: boolean }>
+export async function recordBrowse(articleId: string) {
+  const exist = await db.collection('browse_history').where({ article_id: articleId }).count()
+  const total = exist.result?.total || exist.total || 0
+  if (total > 0) {
+    const list = await db.collection('browse_history').where({ article_id: articleId }).get()
+    const data = list.result?.data || list.data || []
+    if (data.length > 0) {
+      await db.collection('browse_history').doc(data[0]._id).update({ browse_time: Date.now() })
+    }
+  } else {
+    await db.collection('browse_history').add({ article_id: articleId, browse_time: Date.now() })
+  }
+  return { ok: true }
 }
