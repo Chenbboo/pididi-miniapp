@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { miniLogin } from '@/utils/login'
+import { miniLogin, isLoggedIn, logout, getStoredUser } from '@/utils/login'
 
 definePage({ style: { navigationBarTitleText: '我的' } })
 
 const isLogin = ref(false)
 const userName = ref('')
+const avatarUrl = ref('')
 
 const menus = [
   { icon: 'i-carbon-favorite', title: '我的收藏', path: '/pages/collection/index' },
@@ -12,20 +13,40 @@ const menus = [
   { icon: 'i-carbon-map', title: '关于我们', path: '/pages/about/about' },
 ]
 
+// 页面加载时检查登录状态
+onShow(() => {
+  if (isLoggedIn()) {
+    const user = getStoredUser()
+    if (user) {
+      isLogin.value = true
+      userName.value = user.nickname
+      avatarUrl.value = user.avatar
+    }
+  }
+})
+
 async function doLogin() {
   try {
     uni.showLoading({ title: '登录中...' })
-    const { code } = await miniLogin()
-    // TODO: 将 code 发给后端换取 token，等 uniCloud 建好后对接
-    console.log('登录凭证:', code)
+    const user = await miniLogin()
     isLogin.value = true
-    userName.value = '旅行者'
+    userName.value = user.nickname || '旅行者'
+    avatarUrl.value = user.avatar || ''
     uni.hideLoading()
     uni.showToast({ title: '登录成功', icon: 'success' })
-  } catch (e) {
+  } catch (e: any) {
     uni.hideLoading()
-    uni.showToast({ title: '登录失败，请重试', icon: 'none' })
+    console.error('登录失败:', e)
+    uni.showToast({ title: e.message || '登录失败，请重试', icon: 'none' })
   }
+}
+
+function doLogout() {
+  logout()
+  isLogin.value = false
+  userName.value = ''
+  avatarUrl.value = ''
+  uni.showToast({ title: '已退出', icon: 'none' })
 }
 
 function goPage(path: string) {

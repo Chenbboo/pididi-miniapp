@@ -1,15 +1,32 @@
 <script lang="ts" setup>
 import ContentCard from '@/components/content-card.vue'
+import { getCollectionList } from '@/api/cloud/collections'
 
 defineOptions({ name: 'Collection' })
 definePage({ style: { navigationBarTitleText: '我的收藏' } })
 
-const list = ref([
-  { id: 2, title: '越南米其林餐厅盘点', category: '主题玩法', views: 956 },
-  { id: 5, title: '河内骗局全揭秘', category: '避坑指南', views: 3421 },
-])
+const list = ref<any[]>([])
+const loading = ref(true)
 
-function goDetail(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
+async function fetchCollections() {
+  try {
+    const data = await getCollectionList()
+    list.value = data.filter(item => item.article).map(item => ({
+      _id: item.article!._id,
+      title: item.article!.title,
+      category: item.article!.category,
+      views: item.article!.views,
+    }))
+  } catch (e) {
+    console.error('获取收藏列表失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onShow(() => { fetchCollections() })
+
+function goDetail(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
 </script>
 
 <template>
@@ -20,9 +37,9 @@ function goDetail(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=
     </view>
 
     <view class="list" v-else>
-      <ContentCard v-for="item in list" :key="item.id"
-        :id="item.id" :title="item.title" :category="item.category" :views="item.views"
-        @click="goDetail(item.id)" />
+      <ContentCard v-for="item in list" :key="item._id"
+        :id="item._id" :title="item.title" :category="item.category" :views="item.views"
+        @click="goDetail(item._id)" />
     </view>
   </view>
 </template>

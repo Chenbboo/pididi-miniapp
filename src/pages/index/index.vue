@@ -2,6 +2,8 @@
 import NavBar from '@/components/nav-bar.vue'
 import SearchBar from '@/components/search-bar.vue'
 import ContentCard from '@/components/content-card.vue'
+import { getHotArticles } from '@/api/cloud/articles'
+import type { Article } from '@/api/cloud/types'
 
 defineOptions({ name: 'Home' })
 definePage({
@@ -16,16 +18,23 @@ const banners = ref([
 ])
 
 const bannerCurrent = ref(0)
+const hotList = ref<Article[]>([])
+const loading = ref(true)
 
-const hotList = ref([
-  { id: 1, title: '胡志明市顶级酒店盘点 | 住在传奇里', category: '目的地攻略', views: 1280 },
-  { id: 2, title: '西贡 rooftop 酒吧指南 | 法式风情夜', category: '主题玩法', views: 956 },
-  { id: 3, title: '胡志明市 3 天深度游 | 东方巴黎', category: '行程规划', views: 2103 },
-  { id: 4, title: '越南电子签全流程 | VIP加急通道', category: '出行攻略', views: 867 },
-])
+async function fetchHot() {
+  try {
+    hotList.value = await getHotArticles(6)
+  } catch (e) {
+    console.error('获取热门文章失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onLoad(() => { fetchHot() })
 
 function goSearch() { uni.navigateTo({ url: '/pages/search/index' }) }
-function goContent(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
+function goContent(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
 </script>
 
 <template>
@@ -57,9 +66,9 @@ function goContent(id: number) { uni.navigateTo({ url: `/pages/content/detail?id
         <text class="hot-more">查看全部 →</text>
       </view>
       <view class="hot-list">
-        <ContentCard v-for="item in hotList" :key="item.id"
-          :id="item.id" :title="item.title" :category="item.category" :views="item.views"
-          @click="goContent(item.id)" />
+        <ContentCard v-for="item in hotList" :key="item._id"
+          :id="item._id" :title="item.title" :category="item.category" :views="item.views"
+          @click="goContent(item._id)" />
       </view>
     </view>
   </view>

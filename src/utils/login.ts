@@ -54,11 +54,68 @@ export function getMiniUserInfo(): Promise<UniApp.GetUserInfoRes> {
 }
 
 /**
- * 一键登录（简化流程）
- * 获取 code → 返回，由调用方传给后端换取 token
+ * 一键登录（完整流程）
+ * 获取 code → uni-id 换取 token → 返回用户信息
  */
-export async function miniLogin(): Promise<{ code: string }> {
-  const res = await getMiniCode()
-  console.log('miniLogin code:', res.code)
-  return res
+export async function miniLogin(): Promise<{
+  uid: string
+  token: string
+  nickname?: string
+  avatar?: string
+}> {
+  const { code } = await getMiniCode()
+
+  // 调用 uni-id-co 云对象登录
+  const uniIdCo = uniCloud.importObject('uni-id-co')
+  const result = await uniIdCo.loginByWeixin({ code })
+
+  if (result.errCode) {
+    throw new Error(result.errMsg || '登录失败')
+  }
+
+  // 存储 token
+  uni.setStorageSync('uni_id_token', result.token)
+  uni.setStorageSync('uni_id_token_expired', result.tokenExpired || 0)
+
+  return {
+    uid: result.uid,
+    token: result.token,
+    nickname: result.nickname,
+    avatar: result.avatar,
+  }
+}
+
+/**
+ * 检查登录状态
+ */
+export function isLoggedIn(): boolean {
+  const token = uni.getStorageSync('uni_id_token')
+  return !!token
+}
+
+/**
+ * 退出登录
+ */
+export function logout(): void {
+  uni.removeStorageSync('uni_id_token')
+  uni.removeStorageSync('uni_id_token_expired')
+}
+
+/**
+ * 获取存储的用户信息
+ */
+export function getStoredUser(): { uid: string; nickname: string; avatar: string } | null {
+  const token = uni.getStorageSync('uni_id_token')
+  if (!token) return null
+  // uni-id token 可解码获取用户信息
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return {
+      uid: payload.uid,
+      nickname: payload.nickname || '旅行者',
+      avatar: payload.avatar || '',
+    }
+  } catch {
+    return null
+  }
 }

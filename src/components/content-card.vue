@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 defineProps<{
-  id: number
+  id: string
   title: string
   category: string
   views?: number

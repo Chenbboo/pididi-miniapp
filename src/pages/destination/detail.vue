@@ -1,19 +1,37 @@
 <script lang="ts" setup>
 import ContentCard from '@/components/content-card.vue'
+import { getDestinationDetail } from '@/api/cloud/destinations'
+import { getArticleList } from '@/api/cloud/articles'
 
 defineOptions({ name: 'DestinationDetail' })
 definePage({ style: { navigationBarTitleText: '' } })
 
-const dest = ref({ name: '胡志明市', nameEn: 'Ho Chi Minh City', intro: '胡志明市（西贡）是越南的经济中心，也是高端旅游的门户。从法式殖民建筑到 rooftop 酒吧，从米其林餐厅到私人定制行程，这座城市融合了东方神秘与法式优雅，是高净值人群探索越南的起点。' })
+const dest = ref({ name: '加载中...', nameEn: '', intro: '' })
+const contents = ref<any[]>([])
 
-const contents = ref([
-  { id: 1, title: '胡志明市顶级酒店盘点 | 住在传奇里', category: '目的地攻略', views: 1280 },
-  { id: 2, title: '西贡 rooftop 酒吧指南 | 法式风情夜', category: '主题玩法', views: 756 },
-  { id: 3, title: '胡志明市 3 天深度游 | 东方巴黎', category: '行程规划', views: 2103 },
-])
+onLoad((options: any) => {
+  const id = options?.id
+  if (id) fetchDetail(id)
+})
 
-onLoad((options: any) => { if (options?.id) uni.setNavigationBarTitle({ title: dest.value.name }) })
-function goDetail(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
+async function fetchDetail(id: string) {
+  try {
+    const data = await getDestinationDetail(id)
+    dest.value = {
+      name: data.name || '加载中...',
+      nameEn: data.name_en || '',
+      intro: data.summary || '',
+    }
+    uni.setNavigationBarTitle({ title: data.name })
+    // 获取该目的地相关文章
+    const articles = await getArticleList({ pageSize: 5, sort: 'hot' })
+    contents.value = articles.list
+  } catch (e) {
+    console.error('获取目的地详情失败:', e)
+  }
+}
+
+function goDetail(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
 </script>
 
 <template>
@@ -33,9 +51,9 @@ function goDetail(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=
     <view class="section">
       <text class="section-title">相关攻略</text>
       <view class="section-list">
-        <ContentCard v-for="item in contents" :key="item.id"
-          :id="item.id" :title="item.title" :category="item.category" :views="item.views"
-          @click="goDetail(item.id)" />
+        <ContentCard v-for="item in contents" :key="item._id"
+          :id="item._id" :title="item.title" :category="item.category" :views="item.views"
+          @click="goDetail(item._id)" />
       </view>
     </view>
   </view>

@@ -3,31 +3,59 @@ import CtaBottom from '@/components/cta-bottom.vue'
 import CtaInline from '@/components/cta-inline.vue'
 import CtaPopup from '@/components/cta-popup.vue'
 import { createShareConfig } from '@/utils/share'
+import { getArticleDetail } from '@/api/cloud/articles'
+import { recordBrowse } from '@/api/cloud/history'
+import { checkCollected, toggleCollection } from '@/api/cloud/collections'
 
 defineOptions({ name: 'ContentDetail' })
 definePage({ style: { navigationBarTitleText: '' } })
 
-// 双端分享：微信 onShareAppMessage 和 抖音 onShareAppMessage 共用配置
-onShareAppMessage(() => {
-  return createShareConfig({
-    title: article.value.title,
-    path: `/pages/content/detail?id=${article.value.id}`,
-  })
-})
-
 const article = ref({
-  id: 1,
-  title: '胡志明市顶级酒店盘点 | 住在传奇里',
-  source: 'PiDiDi骑士俱乐部',
-  datetime: '2026-06-01',
-  content: '<p>胡志明市（西贡）的顶级酒店不仅是一处下榻之所，更是这座城市百年殖民历史与法式优雅的缩影。</p><p>从西贡柏悦（Park Hyatt Saigon）的经典殖民风格到西贡万韵酒店（The Reverie Saigon）的极致奢华，每一家酒店都有独特的故事。</p><p>推荐入住西贡柏悦的总统套房，私人管家服务，顶楼泳池俯瞰城市天际线，距离歌剧院仅几步之遥。</p>',
+  _id: '',
+  title: '加载中...',
+  content: '',
+  category: '',
+  views: 0,
+  collects: 0,
+  publish_date: 0,
 })
-
+const collected = ref(false)
 const showPopup = ref(false)
 let popupTimer: ReturnType<typeof setTimeout> | null = null
 
-onLoad(() => {
-  uni.setNavigationBarTitle({ title: article.value.title })
+async function fetchDetail(id: string) {
+  try {
+    const data = await getArticleDetail(id)
+    article.value = data
+    uni.setNavigationBarTitle({ title: data.title })
+    recordBrowse(id).catch(() => {})
+    try { const c = await checkCollected(id); collected.value = c.collected } catch {}
+  } catch (e) {
+    console.error('获取文章详情失败:', e)
+  }
+}
+
+async function onToggleCollect() {
+  try {
+    const result = await toggleCollection(article.value._id)
+    collected.value = result.collected
+    if (result.collected) { uni.showToast({ title: '已收藏', icon: 'success' }) }
+    else { uni.showToast({ title: '已取消收藏', icon: 'none' }) }
+  } catch (e) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+  }
+}
+
+onShareAppMessage(() => {
+  return createShareConfig({
+    title: article.value.title,
+    path: `/pages/content/detail?id=${article.value._id}`,
+  })
+})
+
+onLoad((options: any) => {
+  const id = options?.id
+  if (id) fetchDetail(id)
   popupTimer = setTimeout(() => { showPopup.value = true }, 15000)
 })
 
@@ -43,8 +71,8 @@ onUnload(() => { if (popupTimer) clearTimeout(popupTimer) })
     <view class="header">
       <text class="title">{{ article.title }}</text>
       <view class="meta">
-        <text>{{ article.source }}</text>
-        <text>{{ article.datetime }}</text>
+        <text>{{ article.category }}</text>
+        <text>{{ article.views }} 次浏览</text>
       </view>
     </view>
 

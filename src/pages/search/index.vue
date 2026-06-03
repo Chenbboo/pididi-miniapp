@@ -1,11 +1,42 @@
 <script lang="ts" setup>
+import { searchArticles } from '@/api/cloud/articles'
+import type { Article } from '@/api/cloud/types'
+
 defineOptions({ name: 'Search' })
 definePage({ style: { navigationBarTitleText: '搜索' } })
 
 const keyword = ref('')
-const history = ref<string[]>(['岘港酒店', '越南签证', '下龙湾', '富国岛度假村'])
+const history = ref<string[]>([])
+const results = ref<Article[]>([])
+const searching = ref(false)
 
-function doSearch() { if (!keyword.value.trim()) return }
+// 读取本地搜索历史
+onLoad(() => {
+  const stored = uni.getStorageSync('search_history')
+  if (stored) history.value = JSON.parse(stored)
+})
+
+async function doSearch() {
+  if (!keyword.value.trim()) return
+  searching.value = true
+  try {
+    // 保存搜索历史
+    const kw = keyword.value.trim()
+    if (!history.value.includes(kw)) {
+      history.value.unshift(kw)
+      if (history.value.length > 10) history.value.pop()
+      uni.setStorageSync('search_history', JSON.stringify(history.value))
+    }
+    const result = await searchArticles(kw)
+    results.value = result.list
+  } catch (e) {
+    console.error('搜索失败:', e)
+  } finally {
+    searching.value = false
+  }
+}
+
+function goDetail(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
 </script>
 
 <template>
@@ -18,7 +49,15 @@ function doSearch() { if (!keyword.value.trim()) return }
       </view>
     </view>
 
-    <view class="history" v-if="history.length > 0">
+    <!-- 搜索结果 -->
+    <view v-if="results.length > 0" class="results">
+      <view v-for="item in results" :key="item._id" class="result-item" @click="goDetail(item._id)">
+        <text class="r-cat">{{ item.category }}</text>
+        <text class="r-title">{{ item.title }}</text>
+      </view>
+    </view>
+
+    <view v-else-if="!searching" class="history" v-if="history.length > 0">
       <view class="history-header">
         <text class="history-title">搜索历史</text>
         <text class="clear" @click="history = []">清空</text>
@@ -42,4 +81,8 @@ function doSearch() { if (!keyword.value.trim()) return }
 .clear { font-size: 12px; color: #6B6B6B; }
 .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .tag { border-radius: 999px; background: #1A1A1A; padding: 6px 12px; font-size: 12px; color: #999; }
+.results { padding: 0 16px; }
+.result-item { border-bottom: 1px solid #1A1A1A; padding: 14px 0; }
+.r-cat { font-size: 11px; color: #C9A84C; }
+.r-title { display: block; margin-top: 4px; font-size: 14px; color: #E5E5E5; }
 </style>

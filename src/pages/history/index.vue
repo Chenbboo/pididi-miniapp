@@ -1,14 +1,41 @@
 <script lang="ts" setup>
+import { getHistoryList } from '@/api/cloud/history'
+
 defineOptions({ name: 'History' })
 definePage({ style: { navigationBarTitleText: '浏览历史' } })
 
-const list = ref([
-  { id: 1, title: '岘港洲际酒店全攻略', category: '目的地攻略', time: '今天 14:32' },
-  { id: 3, title: '5天高端定制行程', category: '行程规划', time: '昨天 09:15' },
-  { id: 5, title: '河内骗局全揭秘', category: '避坑指南', time: '6月1日' },
-])
+const list = ref<any[]>([])
+const loading = ref(true)
 
-function goDetail(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
+async function fetchHistory() {
+  try {
+    const data = await getHistoryList()
+    list.value = data.filter(item => item.article).map(item => ({
+      _id: item.article!._id,
+      title: item.article!.title,
+      category: item.article!.category,
+      time: formatTime(item.browse_time),
+    }))
+  } catch (e) {
+    console.error('获取浏览历史失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function formatTime(ts: number): string {
+  const now = Date.now()
+  const diff = now - ts
+  if (diff < 3600000) return '刚刚'
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`
+  const d = new Date(ts)
+  return `${d.getMonth() + 1}月${d.getDate()}日`
+}
+
+onShow(() => { fetchHistory() })
+
+function goDetail(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=${id}` }) }
 </script>
 
 <template>
@@ -19,7 +46,7 @@ function goDetail(id: number) { uni.navigateTo({ url: `/pages/content/detail?id=
     </view>
 
     <view class="list" v-else>
-      <view v-for="item in list" :key="item.id" class="item" @click="goDetail(item.id)">
+      <view v-for="item in list" :key="item._id" class="item" @click="goDetail(item._id)">
         <view class="item-left">
           <text class="cat">{{ item.category }}</text>
           <text class="title">{{ item.title }}</text>

@@ -1,13 +1,24 @@
 <script lang="ts" setup>
 import DestinationCard from '@/components/destination-card.vue'
+import { getDestinationList } from '@/api/cloud/destinations'
 
 defineOptions({ name: 'DestinationList' })
 definePage({ style: { navigationBarTitleText: '目的地' } })
 
-// 第一期只做胡志明市，后续扩展其他城市
-const destinations = [
-  { id: 'hcmc', name: '胡志明市', nameEn: 'Ho Chi Minh City', region: '南部', count: 18 },
-]
+const destinations = ref<any[]>([])
+const loading = ref(true)
+
+async function fetchDestinations() {
+  try {
+    destinations.value = await getDestinationList()
+  } catch (e) {
+    console.error('获取目的地列表失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onLoad(() => { fetchDestinations() })
 
 function goDetail(id: string) { uni.navigateTo({ url: `/pages/destination/detail?id=${id}` }) }
 </script>
@@ -15,9 +26,9 @@ function goDetail(id: string) { uni.navigateTo({ url: `/pages/destination/detail
 <template>
   <view class="page">
     <view class="list">
-      <DestinationCard v-for="dest in destinations" :key="dest.id"
-        :id="dest.id" :name="dest.name" :name-en="dest.nameEn"
-        :region="dest.region" :count="dest.count" @click="goDetail(dest.id)" />
+      <DestinationCard v-for="dest in destinations" :key="dest._id"
+        :id="dest._id" :name="dest.name" :name-en="dest.name_en"
+        :region="dest.region" :count="dest.article_count || 0" @click="goDetail(dest._id)" />
     </view>
   </view>
 </template>
