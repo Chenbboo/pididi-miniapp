@@ -1,22 +1,37 @@
 <script lang="ts" setup>
-defineProps<{
+import { ref, watchEffect } from 'vue'
+
+const props = defineProps<{
   id: string
   title: string
   category: string
   views?: number
   collects?: number
-  image?: string
+  cover?: string
   time?: string
 }>()
 
 const emit = defineEmits<{ click: [] }>()
 function go() { emit('click') }
+
+const displayUrl = ref('')
+
+watchEffect(async () => {
+  if (props.cover) {
+    try {
+      const res = await uniCloud.getTempFileURL({ fileList: [props.cover] })
+      displayUrl.value = res.fileList?.[0]?.tempFileURL || ''
+    } catch (e) {
+      displayUrl.value = ''
+    }
+  }
+})
 </script>
 
 <template>
   <view class="card-box" @click="go">
     <view class="card-img">
-      <image v-if="image" :src="image" class="img" mode="aspectFill" />
+      <image v-if="displayUrl" :src="displayUrl" class="img" mode="aspectFill" />
       <view v-else class="img-placeholder">
         <view class="i-carbon-image text-4xl text-gray-600" />
       </view>

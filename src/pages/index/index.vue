@@ -68,7 +68,7 @@ function goContent(id: string) { uni.navigateTo({ url: `/pages/content/detail?id
       </view>
       <view class="hot-list">
         <ContentCard v-for="item in hotList" :key="item._id"
-          :id="item._id" :title="item.title" :category="item.category" :views="item.views"
+          :id="item._id" :title="item.title" :category="item.category" :views="item.views" :cover="item.cover"
           @click="goContent(item._id)" />
       </view>
     </view>

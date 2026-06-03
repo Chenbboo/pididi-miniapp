@@ -38,7 +38,7 @@ function goDetail(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=
 
     <view class="list" v-else>
       <ContentCard v-for="item in list" :key="item._id"
-        :id="item._id" :title="item.title" :category="item.category" :views="item.views"
+        :id="item._id" :title="item.title" :category="item.category" :views="item.views" :cover="item.cover"
         @click="goDetail(item._id)" />
     </view>
   </view>

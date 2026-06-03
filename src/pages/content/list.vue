@@ -73,7 +73,7 @@ function goDetail(id: string) { uni.navigateTo({ url: `/pages/content/detail?id=
     <view class="list">
       <ContentCard v-for="item in list" :key="item._id"
         :id="item._id" :title="item.title" :category="item.category"
-        :views="item.views" :collects="item.collects"
+        :views="item.views" :cover="item.cover" :collects="item.collects"
         @click="goDetail(item._id)" />
     </view>
   </view>
